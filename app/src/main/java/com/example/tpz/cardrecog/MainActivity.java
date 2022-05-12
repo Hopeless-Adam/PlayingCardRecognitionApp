@@ -1,23 +1,18 @@
 package com.example.tpz.cardrecog;
 
+import static org.opencv.imgproc.Imgproc.boundingRect;
+
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Environment;
+import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.text.TextUtils;
-import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceView;
-import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,15 +33,11 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import static org.opencv.imgproc.Imgproc.boundingRect;
 
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2{
 
@@ -159,8 +150,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Size size = new Size(assetMaT.height(), assetMaT.width());
             Imgproc.resize(currMat, sizedMat, size);
             Core.rotate(sizedMat, sizedMat, Core.ROTATE_90_CLOCKWISE);
-            //add border to image
-//            Core.copyMakeBorder(sizedMat, sizedMat, border, border, border, border, Core.BORDER_REPLICATE);
 
             //compare image pixel
             Mat diffMat = new Mat();
@@ -179,11 +168,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             //get the most similar image in pixel and shape
             if (matchPixel < min_diff_pixel){
                 min_diff_pixel = matchPixel;
-//                min_diff_per = matchPer;
                 min_diff_str = image_name;
                 tmp[0] = sizedMat;
-                //debug
-                //showImage(diffMat, imageView2);
             }
         }
 
@@ -195,41 +181,12 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         mat = inputFrame.rgba();
 
-        //remove glare
-//        List<Mat> channels = new LinkedList();
-//        Core.split(mat, channels);
-//        CLAHE clahe = Imgproc.createCLAHE();
-//        clahe.apply(channels.get(0), mat);
-
-        //only show white to grey with some color tolerance
-//        Mat filter_combined = new Mat();
-//        Mat[] filter = new Mat[3];
-//        int partition = 255 / filter.length;
-//
-//        // Convert to HSV
-//        Mat hsvMat = new Mat();
-//        Imgproc.cvtColor(mat, hsvMat, Imgproc.COLOR_RGB2HSV, 3);
-//
-//        //assign first filter to filter_combined
-//        Core.inRange(hsvMat, new Scalar(0, 0, 0),
-//                new Scalar(partition, partition, partition), filter_combined);
-//        for(int i = 1; i < filter.length; i++) {
-//            filter[i] = new Mat();
-//            Core.inRange(mat, new Scalar(partition * i, partition * i, partition * i),
-//                    new Scalar(partition * (i + 1), partition * (i + 1), partition * (i + 1)), filter[i]);
-//            Core.bitwise_or(filter_combined, filter[i], filter_combined);
-//        }
-//
+        //completely convert to grey
         Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGBA2GRAY);
-//        //completely convert to grey
-//        Core.bitwise_xor(mat, filter_combined, mat);
         Imgproc.GaussianBlur(mat, mat, new Size(1,1), 0);
 
         Imgproc.threshold(mat, mat, 120, 255, Imgproc.THRESH_BINARY);
-//        Imgproc.adaptiveThreshold(mat, mat, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 15, 40);
 
-        //debug
-        //showImage(mat, imageView);
 
         //find largest contour
         MatOfPoint max_contour = getMaxContour(mat);
@@ -247,7 +204,6 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
                 //draw rotated rectangle
                 Point points[] = approx.toArray();
-//                rect.points(points);
                 for (int i = 0; i < 4; ++i) {
                     Imgproc.line(mat, points[i], points[(i + 1) % 4], new Scalar(255, 255, 255));
                 }
@@ -288,12 +244,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 //transform polynomial to rectangle
                 Imgproc.warpPerspective(mat, mat, warpMat, mat.size());
 
-                //draw cropped image for better visualization
-//                Imgproc.rectangle(mat, new Point(0, 604), new Point(141, 719), new Scalar(255, 255, 255));
-//                Imgproc.rectangle(mat, new Point(86, 604), new Point(227, 719), new Scalar(255, 255, 255));
-
-                //crop upper left of the card
-                //invert black and white
+                //crop upper left of the card and invert to black and white
                 Mat cropMat = new Mat(mat, new Rect(0, 604, 227, 115));
                 Core.bitwise_not(cropMat, cropMat);
 
