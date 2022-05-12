@@ -5,14 +5,22 @@ import static org.opencv.imgproc.Imgproc.boundingRect;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     Mat mat;
     BaseLoaderCallback baseLoaderCallback;
     TextView textView;
+    Button popUpButton;
 
     static long lastTime;
 
@@ -77,8 +86,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
 
         textView = findViewById(R.id.text1);
-
-
+        popUpButton = findViewById(R.id.button);
         lastTime = System.currentTimeMillis();
 
         cameraBridgeViewBase = (JavaCameraView) findViewById(R.id.myCameraView);
@@ -98,6 +106,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 }
             }
         };
+
+        popUpButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onButtonShowPopUp(view);
+            }
+        });
     }
 
     @Override
@@ -301,6 +316,43 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         }
         return mat;
     }
+
+    public void onButtonShowPopUp(View view){
+
+        /*
+            Taken from StackOverflow
+            https://stackoverflow.com/a/50188704
+         */
+
+        // inflate the layout of the popup window
+        LayoutInflater inflater = (LayoutInflater)
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.handpopup, null);
+
+        // create the popup window
+        int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        boolean focusable = true; // lets taps outside the popup also dismiss it
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
+
+        // show the popup window
+        // which view you pass in doesn't matter, it is only used for the window tolken
+        popupWindow.showAtLocation(view, Gravity.CENTER, 0, 0);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            popupWindow.setElevation(20);
+        }
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                popupWindow.dismiss();
+                return true;
+            }
+        });
+    }
+
+
 
     @Override
     protected void onPause() {
