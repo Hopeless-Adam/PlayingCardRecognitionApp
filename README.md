@@ -7,3 +7,5 @@ Working Principle:
 3. Crop out the top left position of the card to obtain its Rank and Suit.
 4. Compare the Rank and Suit with the pre-stored images and find the most similar one.
 5. Display the results.  
+
+Code is in Master branch
