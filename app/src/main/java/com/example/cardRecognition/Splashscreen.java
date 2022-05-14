@@ -1,11 +1,9 @@
 package com.example.cardRecognition;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-
-import com.example.cardRecognition.R;
 
 public class Splashscreen extends AppCompatActivity {
 
@@ -16,14 +14,11 @@ public class Splashscreen extends AppCompatActivity {
 
 
 
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Intent MainActivity = new Intent(Splashscreen.this, com.example.cardRecognition.MainActivity.class);
-                startActivity(MainActivity);
-                finish();
+        new Handler().postDelayed(() -> {
+            Intent MainActivity = new Intent(Splashscreen.this, com.example.cardRecognition.MainActivity.class);
+            startActivity(MainActivity);
+            finish();
 
-            }
         }, 3000);
     }
 }

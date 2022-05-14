@@ -3,6 +3,7 @@ package com.example.cardRecognition;
 import static org.opencv.imgproc.Imgproc.boundingRect;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.os.Build;
@@ -14,7 +15,6 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
@@ -23,8 +23,8 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.os.Handler;
 
-import com.example.cardRecognition.R;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -146,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     }
 
     public String getCardType(Mat currMat, String images_path) throws IOException {
+        // Covers Section 4 of the Card methodology
         String[] images_name = getAssets().list(images_path);
         int min_diff_pixel = 4000;
         String min_diff_str = "";
@@ -190,14 +191,13 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         mat = inputFrame.rgba();
 
-        //completely convert to grey
+        // 1. Greyscale and blur the image to remove unnecessary details.
         Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGBA2GRAY);
         Imgproc.GaussianBlur(mat, mat, new Size(1,1), 0);
-
         Imgproc.threshold(mat, mat, 120, 255, Imgproc.THRESH_BINARY);
 
 
-        //find largest contour
+        //2. Find the largest white area and identify it as a card
         MatOfPoint max_Contour = getMaxContour(mat);
 
         //check if max_contour exists
@@ -254,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 //transform polynomial to rectangle
                 Imgproc.warpPerspective(mat, mat, warpMat, mat.size());
 
-                //crop upper left of the card and invert to black and white
+                //3. Crop out the top left position of the card to obtain its Rank and Suit
                 Mat cropMat = new Mat(mat, new Rect(0, 604, 227, 115));
                 Core.bitwise_not(cropMat, cropMat);
 
@@ -276,7 +276,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 if (tempSuit != null)
                     Suit = new Mat(Suit, boundingRect(tempSuit));
 
-                //match suit
+                //4. Compare the Rank and Suit with the pre-stored images and find the most similar one
                 if (!(tempRank == null || tempSuit == null)) {
                     final String SRank;
                     final String SSuit;
@@ -285,20 +285,23 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                         SRank = getCardType(Rank, "Rank");
                         SSuit = getCardType(Suit, "Suit");
 
-                        //print result to textview
+                        //5. Display the results
                         Thread thread = new Thread() {
                             @Override
                             public void run() {
-                                runOnUiThread(new Runnable() //run on ui thread
-                                {
-                                    public void run() {
-                                        //if no matched card, output empty string
-                                        if(TextUtils.isEmpty(SRank) || TextUtils.isEmpty(SSuit))
-                                            textView.setText("");
-                                        else {
-                                            textView.setText(SRank + " " + SSuit);
+                                //run on ui thread
+                                runOnUiThread(() -> {
+                                    //if no matched card, output empty string, followed by new text
+                                    if(TextUtils.isEmpty(SRank) || TextUtils.isEmpty(SSuit)) {
+                                        textView.setText("");
+                                        new Handler().postDelayed(() -> {
+                                            textView.setText("Find new card");
 
-                                        }
+                                        }, 3000);
+
+                                    } else {
+                                        textView.setText(SRank + " " + SSuit);
+
                                     }
                                 });
                             }
@@ -340,12 +343,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         }
 
         // dismiss the popup window when touched
-        popupView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                popupWindow.dismiss();
-                return true;
-            }
+        popupView.setOnTouchListener((v, event) -> {
+            popupWindow.dismiss();
+            return true;
         });
     }
 
@@ -362,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     protected void onResume() {
         super.onResume();
         if(!OpenCVLoader.initDebug())
-            Toast.makeText(getApplicationContext(),"There is a problem in openCV", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(),"OpenCV Issue, restart app", Toast.LENGTH_SHORT).show();
         else
             baseloadercallback.onManagerConnected(BaseLoaderCallback.SUCCESS);
     }
